@@ -13,5 +13,18 @@ code {
 }
 
 #map {
-  height: 100vh;
+  /* height: 100vh; */
+  height: 500px;
+}
+
+dt {
+  margin-top: 0.3em;
+}
+
+dd {
+    margin-bottom: 0;
+}
+
+.no-corners {
+  border-radius: 0 !important;
 }
