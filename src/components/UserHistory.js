@@ -18,26 +18,61 @@ export default class UserHistory extends Component {
         super(props);
         this.state = {
             username: '',
+            tracked_username: '',
             history: [],
             opened: { id: null, histories: [] },
             error: { show: false, text: '' },
         };
     }
 
-    handleLogin = async (event) => {
-        event.preventDefault();
-        const { username } = this.state
+    componentWillUnmount() {
+        clearInterval(this.intervalId);
+    }
 
-        const res = await fetch('http://localhost:3001/users/name/' + username,
-        );
+    handleFindUser = async (event) => {
+        event.preventDefault();
+
+        const { username, tracked_username } = this.state
+
+        // if (!this.intervalId) {
+        //     return this.setState({ tracked_username: username }, () => {
+        //         this.fetchHistory().then((res) => {
+        //             console.log('fetch ', res);
+        //             if (res)
+        //                 this.intervalId = setInterval(this.fetchHistory, 1000 * 1)
+        //         });
+        //     });
+        // }
+
+        if(tracked_username === username) return;
+
+        if (this.intervalId || tracked_username !== username) {
+            clearInterval(this.intervalId);
+        }
+
+        return this.setState({ tracked_username: username, history: [] }, () => {
+            this.fetchHistory().then((res) => {
+                console.log('fetch ', res);
+                if (res)
+                    this.intervalId = setInterval(this.fetchHistory, 1000 * 1)
+            });
+        });
+    }
+
+    fetchHistory = async (event) => {
+        const { tracked_username } = this.state
+
+        const res = await fetch('http://localhost:3001/users/name/' + tracked_username);
 
         const data = await res.json();
         if (data.message !== undefined || !Array.isArray(data)) {
-            this.setState({ username: '', error: { show: true, text: data.message } });
-            return;
+            this.setState({ error: { show: true, text: data.message } });
+            return false;
         }
+        if (data.length === 0) return false;
 
         this.setState({ history: data, error: { show: false, text: '' } });
+        return true;
     }
 
     handleChange = (event) => {
@@ -138,7 +173,7 @@ export default class UserHistory extends Component {
                 <Alert variant="danger" show={error.show} onClose={this.closeAlert} dismissible>
                     {error.text}
                 </Alert>
-                <Form onSubmit={this.handleLogin}>
+                <Form onSubmit={this.handleFindUser}>
                     <InputGroup className="my-3">
                         <FormControl
                             placeholder="Username"
