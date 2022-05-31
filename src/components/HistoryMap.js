@@ -2,7 +2,6 @@ import { MapContainer } from 'react-leaflet/MapContainer'
 import { TileLayer } from 'react-leaflet/TileLayer'
 import { Polyline, FeatureGroup } from 'react-leaflet';
 import { useMap } from 'react-leaflet/hooks'
-import CustomMarker from './CustomMarker'
 import React, { useState, useEffect } from 'react';
 import { Marker, Popup } from "react-leaflet";
 
