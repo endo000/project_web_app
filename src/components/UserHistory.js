@@ -12,6 +12,7 @@ import ListGroup from 'react-bootstrap/esm/ListGroup';
 import ListGroupItem from 'react-bootstrap/esm/ListGroupItem';
 import Collapse from 'react-bootstrap/esm/Collapse'
 import { ChevronDown } from 'react-bootstrap-icons';
+import HistoryMap from './HistoryMap'
 
 export default class UserHistory extends Component {
     constructor(props) {
@@ -22,6 +23,9 @@ export default class UserHistory extends Component {
             history: [],
             opened: { id: null, histories: [] },
             error: { show: false, text: '' },
+            center: null,
+            zoom: null,
+            activePopup: null
         };
     }
 
@@ -44,7 +48,7 @@ export default class UserHistory extends Component {
         //     });
         // }
 
-        if(tracked_username === username) return;
+        if (tracked_username === username) return;
 
         if (this.intervalId || tracked_username !== username) {
             clearInterval(this.intervalId);
@@ -58,6 +62,7 @@ export default class UserHistory extends Component {
             });
         });
     }
+
 
     fetchHistory = async (event) => {
         const { tracked_username } = this.state
@@ -90,7 +95,14 @@ export default class UserHistory extends Component {
         let id = opened.id;
         opened.id = id && id === history_id ? null : history_id;
         opened.histories = [];
-        this.setState({ opened: opened });
+
+        const found = this.state.history.find(element => element._id === history_id);
+
+        this.setState({
+            opened: opened,
+            center: [found.history[0].position.latitude, found.history[0].position.longitude],
+            zoom: 13
+        });
     }
 
     handleMoreData = (data_id) => {
@@ -106,7 +118,21 @@ export default class UserHistory extends Component {
             ids.push(data_id);
         }
         opened.histories = ids;
-        this.setState({ opened: opened });
+
+        let found;
+        this.state.history.forEach(element => {
+            found = element.history.find(obj => {
+                return obj._id === data_id;
+            });
+        });
+
+        let center = found ? [found.position.latitude, found.position.longitude] : this.state.center
+        this.setState({
+            opened: opened,
+            center: center,
+            zoom: 15,
+            activePopup: data_id
+        });
     }
 
     renderHistory(history) {
@@ -167,34 +193,41 @@ export default class UserHistory extends Component {
     }
 
     render() {
-        const { username, history, error } = this.state;
+        const { username, history, error, center, zoom, activePopup } = this.state;
         return (
             <Container>
-                <Alert variant="danger" show={error.show} onClose={this.closeAlert} dismissible>
-                    {error.text}
-                </Alert>
-                <Form onSubmit={this.handleFindUser}>
-                    <InputGroup className="my-3">
-                        <FormControl
-                            placeholder="Username"
-                            aria-label="Username"
-                            aria-describedby="basic-addon2"
-                            name="username"
-                            value={username}
-                            onChange={this.handleChange}
-                        />
-                        <Button type="submit" variant="primary" id="button-addon2">
-                            Find user
-                        </Button>
-                    </InputGroup>
-                </Form>
-                {history.length === 0 ?
-                    <h5 className="text-center">Enter username and see his history</h5>
-                    :
-                    <Row xs={1} md={2} className="g-4 mb-2">
-                        {history.map((data) => this.renderHistory(data))}
-                    </Row>
-                }
+                <Row>
+                    <Col>
+                        <Alert variant="danger" show={error.show} onClose={this.closeAlert} dismissible>
+                            {error.text}
+                        </Alert>
+                        <Form onSubmit={this.handleFindUser}>
+                            <InputGroup className="my-3">
+                                <FormControl
+                                    placeholder="Username"
+                                    aria-label="Username"
+                                    aria-describedby="basic-addon2"
+                                    name="username"
+                                    value={username}
+                                    onChange={this.handleChange}
+                                />
+                                <Button type="submit" variant="primary" id="button-addon2">
+                                    Find user
+                                </Button>
+                            </InputGroup>
+                        </Form>
+                        {history.length === 0 ?
+                            <h5 className="text-center">Enter username and see his history</h5>
+                            :
+                            <Row xs={1} md={2} className="g-4 mb-2">
+                                {history.map((data) => this.renderHistory(data))}
+                            </Row>
+                        }
+                    </Col>
+                    <Col>
+                        <HistoryMap history={history} center={center} zoom={zoom} activePopup={activePopup} reset={this.resetState} />
+                    </Col>
+                </Row>
             </Container>
         )
     }
